@@ -1,7 +1,8 @@
 import { useEffect } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, Link } from 'react-router-dom'
 import useTrainingLogAdmin from '../../hooks/Admin/useTrainingLogAdmin'
 import { ImSad2 } from 'react-icons/im'
+import { FaClipboardList, FaCalendarAlt, FaTrashAlt, FaArrowLeft, FaRobot, FaShieldAlt } from 'react-icons/fa'
 
 const AdminSingleTrainingLog = () => {
     const { id } = useParams()
@@ -10,38 +11,99 @@ const AdminSingleTrainingLog = () => {
     useEffect(() => {
         if (!id) return
         getTrainingLogByIdAdmin(String(id))
-    }, [])
+    }, [id])
 
     if (!trainingLogById) {
         return (
-            <div className="no-content-page">
-                <div className="no-content">
-                    <ImSad2 className="no-render-icon" />
-                    <h2 className="no-content-message">Coludn't find a training log, please try generating a new training log.</h2>
+            <div className="flex flex-col items-center justify-center py-20 px-4 text-center my-10">
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-10 max-w-md w-full shadow-lg space-y-4">
+                    <ImSad2 className="w-12 h-12 text-purple-500 mx-auto" />
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                        Training Log Not Found
+                    </h2>
+                    <p className="text-sm text-slate-500 dark:text-zinc-400">
+                        Couldn't locate this training log in admin system.
+                    </p>
+                    <Link to="/admin">
+                        <button className="w-full mt-2 py-3 px-4 bg-purple-600 text-white font-semibold text-sm rounded-xl transition-all shadow-sm">
+                            Back to Admin Dashboard
+                        </button>
+                    </Link>
                 </div>
             </div>
         )
     }
 
-
     return (
-        <div className="singel-page-page">
-            <section className="singel-page-log-div">
+        <div className="space-y-8 pb-12 max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="space-y-4">
+                <Link to="/admin" className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 dark:text-zinc-400 hover:text-purple-500 transition-colors">
+                    <FaArrowLeft className="w-3.5 h-3.5" />
+                    <span>Back to Admin Dashboard</span>
+                </Link>
 
-                <h2 className="singel-page-h4">Workout summary</h2>
-                <p>{trainingLogById.createdAt.slice(0, 10)}</p>
-                <p className="singel-page-day-exercies">{trainingLogById.workoutSummary}</p>
+                <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 bg-purple-500/10 text-purple-600 dark:text-purple-400 rounded-2xl">
+                                <FaShieldAlt className="w-6 h-6" />
+                            </div>
+                            <div>
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                                    ADMIN LOG INSPECTION
+                                </span>
+                                <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mt-1">
+                                    User Workout Log
+                                </h1>
+                            </div>
+                        </div>
+                        <p className="text-xs sm:text-sm text-slate-500 dark:text-zinc-400 flex items-center gap-2 pt-1">
+                            <FaCalendarAlt className="w-3.5 h-3.5 text-purple-500" />
+                            <span>Logged on {trainingLogById.createdAt?.slice(0, 10)}</span>
+                        </p>
+                    </div>
 
-                <h2 className="singel-page-h4">Feedback</h2>
-                <p>{trainingLogById.aiFeedback}</p>
-
-                <div>
-
+                    <button
+                        onClick={() => { deleteTrainingLogByIdAdmin(String(id)) }}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-red-50 dark:bg-red-950/40 hover:bg-red-500 hover:text-white text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 rounded-xl font-semibold text-sm transition-all cursor-pointer shadow-xs shrink-0"
+                    >
+                        <FaTrashAlt className="w-3.5 h-3.5" />
+                        <span>Delete Log (Admin)</span>
+                    </button>
                 </div>
-                <div className='button-div'>
-                    <button className="single-log-button delete-button" onClick={() => { deleteTrainingLogByIdAdmin(String(id)) }}>Delete training log</button>
+            </div>
+
+            {/* Summary */}
+            <div className="bg-white dark:bg-zinc-900 border border-slate-200 dark:border-zinc-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-4">
+                <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-zinc-400">
+                    Logged Workout & Meal Summary
+                </h2>
+                <div className="p-5 bg-slate-50 dark:bg-zinc-800/50 rounded-2xl border border-slate-100 dark:border-zinc-800 text-slate-900 dark:text-zinc-100 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                    {trainingLogById.workoutSummary}
                 </div>
-            </section>
+            </div>
+
+            {/* AI Feedback */}
+            <div className="bg-gradient-to-br from-purple-950/30 via-zinc-900 to-zinc-900 border-2 border-purple-500/40 rounded-3xl p-6 sm:p-8 shadow-xl space-y-4">
+                <div className="flex items-center gap-3">
+                    <div className="p-3 bg-purple-600 text-white rounded-2xl shadow-md">
+                        <FaRobot className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <span className="px-2.5 py-0.5 rounded-full text-xs font-extrabold uppercase tracking-wider bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                            AI COACH FEEDBACK
+                        </span>
+                        <h2 className="text-xl font-extrabold text-white tracking-tight mt-1">
+                            Generated Response
+                        </h2>
+                    </div>
+                </div>
+
+                <div className="p-5 bg-zinc-950/80 rounded-2xl border border-zinc-800 text-slate-200 text-sm sm:text-base leading-relaxed whitespace-pre-line">
+                    {trainingLogById.aiFeedback}
+                </div>
+            </div>
         </div>
     )
 }

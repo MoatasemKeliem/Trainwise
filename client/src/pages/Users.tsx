@@ -1,8 +1,9 @@
+import AdminUserCMS from "../components/Admin/AdminUserCMS"
 
 const Users = () => {
     return (
-        <div>
-            <h1>Users</h1>
+        <div className="space-y-6 pb-10">
+            <AdminUserCMS />
         </div>
     )
 }

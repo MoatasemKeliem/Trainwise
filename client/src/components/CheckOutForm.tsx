@@ -6,6 +6,7 @@ import {
 import axios from "axios";
 import { type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { FiLock } from "react-icons/fi";
 
 const CheckOutForm = ({ setLoading, loading }: any) => {
   const stripe = useStripe();
@@ -16,7 +17,7 @@ const CheckOutForm = ({ setLoading, loading }: any) => {
 
   if (!priceId) {
     navigate("/pricing");
-    return;
+    return null;
   }
 
   const handleSubmit = async (e: FormEvent) => {
@@ -71,14 +72,20 @@ const CheckOutForm = ({ setLoading, loading }: any) => {
   };
 
   return (
-    <div>
-      <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-slate-50 dark:bg-zinc-800/40 p-4 rounded-2xl border border-slate-200 dark:border-zinc-800">
         <PaymentElement />
-        <button id="pay-button" type="submit">
-          {loading ? "Processing Payment..." : "Pay"}
-        </button>
-      </form>
-    </div>
+      </div>
+
+      <button
+        type="submit"
+        disabled={loading || !stripe}
+        className="w-full py-3.5 px-6 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold rounded-2xl transition-all shadow-md shadow-emerald-600/20 active:scale-[0.99] cursor-pointer flex items-center justify-center gap-2"
+      >
+        <FiLock className="w-4 h-4" />
+        <span>{loading ? "Processing Payment..." : "Complete Order"}</span>
+      </button>
+    </form>
   );
 };
 
