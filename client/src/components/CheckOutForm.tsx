@@ -1,81 +1,85 @@
-import { PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js"
+import {
+  PaymentElement,
+  useElements,
+  useStripe,
+} from "@stripe/react-stripe-js";
 import axios from "axios";
 import { type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
-
 const CheckOutForm = ({ setLoading, loading }: any) => {
-    const stripe = useStripe();
-    const elements = useElements()
-    const navigate = useNavigate()
-    const { priceId } = useParams()
-    const Backend_URL = import.meta.env.VITE_API_URL;
+  const stripe = useStripe();
+  const elements = useElements();
+  const navigate = useNavigate();
+  const { priceId } = useParams();
+  const Backend_URL = import.meta.env.VITE_API_URL;
 
+  if (!priceId) {
+    navigate("/pricing");
+    return;
+  }
 
-    if (!priceId) {
-        navigate("/pricing")
-        return
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+
+    if (!stripe || !elements) {
+      console.error("Stripe elements or stripe is missing");
+      return;
     }
 
+    setLoading(true);
 
-    const handleSubmit = async (e: FormEvent) => {
-        e.preventDefault()
+    try {
+      const result = await stripe.confirmSetup({
+        elements,
+        redirect: "if_required",
+      });
 
-        if (!stripe || !elements) {
-            console.error("Stripe elements or stripe is missing")
-            return
-        }
+      if (result.error) {
+        console.error("Couldn't pay for subscription", result.error.message);
+        return;
+      }
 
-        setLoading(true)
+      const paymentMethodId = result.setupIntent?.payment_method;
 
-        try {
-            const result = await stripe.confirmSetup({ elements, redirect: "if_required" })
+      const reposne = await axios.post(
+        `${Backend_URL}/stripe/create-payment`,
+        { priceId, paymentMethodId },
+        { withCredentials: true },
+      );
 
-            if (result.error) {
-                console.error("Couldn't pay for subscription", result.error.message)
-                return
-            }
+      if (reposne.data.message === "You already have an actice subscription") {
+        navigate("/message-page", {
+          state: { messageToShow: "alreadySubscribed" },
+        });
+        return;
+      }
 
+      if (reposne.data.message === "Your payment was successful") {
+        navigate("/message-page", {
+          state: { messageToShow: "success" },
+        });
+        return;
+      }
 
-            const paymentMethodId = result.setupIntent?.payment_method;
-
-            const reposne = await axios.post(`${Backend_URL}/stripe/create-payment`, { priceId, paymentMethodId }, { withCredentials: true })
-
-            if (reposne.data.message === "You already have an actice subscription") {
-                navigate("/message-page", {
-                    state: { messageToShow: "alreadySubscribed" }
-                })
-                return
-            }
-
-            if (reposne.data.message === "Your payment was successful") {
-                navigate("/message-page", {
-                    state: { messageToShow: "success" }
-                })
-                return
-            }
-
-            navigate("/dashboard")
-        } catch (error) {
-            console.error("Payment failed", error)
-        } finally {
-            setLoading(false)
-
-        }
-
-
+      navigate("/dashboard");
+    } catch (error) {
+      console.error("Payment failed", error);
+    } finally {
+      setLoading(false);
     }
+  };
 
+  return (
+    <div>
+      <form onSubmit={handleSubmit}>
+        <PaymentElement />
+        <button id="pay-button" type="submit">
+          {loading ? "Processing Payment..." : "Pay"}
+        </button>
+      </form>
+    </div>
+  );
+};
 
-
-    return (
-        <div>
-            <form onSubmit={handleSubmit}>
-                <PaymentElement />
-                <button id="pay-button" type="submit">{loading ? "Processing Payment..." : "Pay"}</button>
-            </form>
-        </div>
-    )
-}
-
-export default CheckOutForm
+export default CheckOutForm;
