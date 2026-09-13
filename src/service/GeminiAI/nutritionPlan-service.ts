@@ -1,18 +1,17 @@
-import { GoogleGenAI } from "@google/genai"
-import dotenv from "dotenv"
-import { AppDataSource } from "../../data-source"
-import { User } from "../../entities/User"
-import { NutritionPlan } from "../../entities/NutritionPlan"
+import OpenAI from "openai";
+import dotenv from "dotenv";
+import { AppDataSource } from "../../data-source";
+import { User } from "../../entities/User";
+import { NutritionPlan } from "../../entities/NutritionPlan";
 
-dotenv.config({ quiet: true })
+dotenv.config({ quiet: true });
 
-const ai = new GoogleGenAI({})
+const ai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export const generateNutritionPlan = async (userData: any, userId: string) => {
+  const model = "gpt-5-nano-2025-08-07";
 
-    const model = "gemini-2.5-flash-lite"
-
-    const userPrompt = `
+  const userPrompt = `
     You are a certified nutrition expert. Create a 4-week personalized nutrition plan for the user based on the following information:
 
 - Gender: ${userData.gender}
@@ -49,49 +48,36 @@ The nutrition plan **must follow this JSON structure exactly**:
 
     `;
 
+  try {
+    const response = await ai.responses.create({
+      model: model,
+      instructions:
+        "You are a certified nutrition expert specializing in personalized nutrition plans",
+      input: userPrompt,
+    });
+    let clearPlan = response.output_text || "";
+    clearPlan = clearPlan.replace(/^```json\s*/i, "");
+    clearPlan = clearPlan.replace(/\s*```\s*$/i, "");
 
-    try {
-        const response = await ai.models.generateContent({
-            model: model,
-            contents: [
-                {
-                    role: "user",
-                    parts: [{ text: userPrompt }]
-                },
-            ],
+    const nutritionPlan = JSON.parse(clearPlan);
+    const nutritionPlanRepository = AppDataSource.getRepository(NutritionPlan);
 
-            config: {
-                systemInstruction: "You are a certified nutrition expert specializing in personlized nutrition plan"
-            }
-        });
-
-
-        let clearPlan = response.text || "";
-        clearPlan = clearPlan?.replace(/^```json\s*/i, '')
-        clearPlan = clearPlan?.replace(/\s*```\s*$/i, '');
-        const nutritionPlan = JSON.parse(clearPlan)
-
-        const nutritionPlanRepository = AppDataSource.getRepository(NutritionPlan)
-        const userRepository = AppDataSource.getRepository(User)
-
-        const user = await userRepository.findOne({ where: { id: userId } })
-
-        if (!user) {
-            throw new Error("User not found")
-        }
-
-        const newNutritionPlan = nutritionPlanRepository.create({
-            title: `${userData.title}`,
-            meals: nutritionPlan,
-            user
-        })
-
-        await nutritionPlanRepository.save(newNutritionPlan)
-
-        return newNutritionPlan
-
-    } catch (error) {
-        console.error("Couldn't generate nutrition plan", error)
-        return "ERROR: Couldn't generate nutrition plan"
+    const userRepository = AppDataSource.getRepository(User);
+    const user = await userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new Error("User not found");
     }
-}
+
+    const newNutritionPlan = nutritionPlanRepository.create({
+      title: `${userData.title}`,
+      meals: nutritionPlan,
+      user,
+    });
+
+    await nutritionPlanRepository.save(newNutritionPlan);
+    return newNutritionPlan;
+  } catch (error) {
+    console.error("Couldn't generate nutrition plan", error);
+    return "ERROR: Couldn't generate nutrition plan";
+  }
+};
